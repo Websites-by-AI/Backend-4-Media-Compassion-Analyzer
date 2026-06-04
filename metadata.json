@@ -1,0 +1,6 @@
+{
+  "name": "Media Compassion Analyzer",
+  "description": "A sophisticated tool for analyzing YouTube transcripts for compassion levels, emotional tone, and ideological bias.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
