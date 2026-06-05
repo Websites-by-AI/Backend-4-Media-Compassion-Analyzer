@@ -39,9 +39,19 @@ export interface AnalyzeResponse {
   transcriptDisabled?: boolean;
   isSimulated?: boolean;
   modelError?: boolean;
+  backupApiUsed?: boolean;
+  activeExtractionMode?: string;
 }
 
 export interface AnalyzeRequest {
   url: string;
+}
+
+export interface HistoryItem {
+  url: string;
+  timestamp: string;
+  title: string;
+  summary: string;
+  compassionLevel: string;
 }
 
