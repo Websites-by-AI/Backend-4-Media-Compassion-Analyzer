@@ -9,16 +9,21 @@ import { Youtube, Search, AlertCircle, Loader2, Play, CheckCircle } from 'lucide
 import Header from './components/Header';
 import AnalysisCards from './components/AnalysisCards';
 import TranscriptBox from './components/TranscriptBox';
+import VideoSubtitlesVisualizer from './components/VideoSubtitlesVisualizer';
 import ExportActions from './components/ExportActions';
 import VideoDetailsCard from './components/VideoDetailsCard';
 import SentimentDistributionChart from './components/SentimentDistributionChart';
 import LoadingIndicator from './components/LoadingIndicator';
 import HistoryList from './components/HistoryList';
 import ApiKeySettings from './components/ApiKeySettings';
+import ManualTranscriptInput from './components/ManualTranscriptInput';
+import PrintFriendlyReport from './components/PrintFriendlyReport';
+import { DEFAULT_TRANSCRIPT_TEXT } from './data/defaultTranscript';
 import type { AnalyzeResponse, HistoryItem } from './types';
 
 export default function App() {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState('https://m.youtube.com/watch?v=W4z3jCQGFYY&pp=iggUQAFKEGM4VWNNZEU4NTVOVXpYWGo%3D');
+  const [manualTranscript, setManualTranscript] = useState(DEFAULT_TRANSCRIPT_TEXT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leakedKeyInfo, setLeakedKeyInfo] = useState<{ actionUrl: string } | null>(null);
@@ -33,6 +38,7 @@ export default function App() {
   const [backupApiUrl, setBackupApiUrl] = useState<string>(() => {
     return localStorage.getItem('backup_api_url') || 'https://youtube-transcript.io/';
   });
+  const [showPrintMode, setShowPrintMode] = useState(false);
 
   const DEFAULT_URL = 'https://m.youtube.com/watch?v=W4z3jCQGFYY&pp=iggUQAFKEGM4VWNNZEU4NTVOVXpYWGo%3D';
 
@@ -80,7 +86,7 @@ export default function App() {
           'Content-Type': 'application/json',
           'Accept-Language': 'fa' 
         },
-        body: JSON.stringify({ url, customApiKey, extractionMode, backupApiUrl }),
+        body: JSON.stringify({ url, customApiKey, extractionMode, backupApiUrl, manualTranscript }),
       });
 
       const result = await response.json().catch(() => ({}));
@@ -103,6 +109,7 @@ export default function App() {
 
   const setExample = () => {
     setUrl(DEFAULT_URL);
+    setManualTranscript(DEFAULT_TRANSCRIPT_TEXT);
   };
 
   const handleSelectHistory = (selectedUrl: string) => {
@@ -115,6 +122,16 @@ export default function App() {
     localStorage.removeItem('analysis_history');
     setHistory([]);
   };
+
+  if (showPrintMode && data) {
+    return (
+      <PrintFriendlyReport 
+        data={data} 
+        url={url || DEFAULT_URL} 
+        onClose={() => setShowPrintMode(false)} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900" dir="rtl">
@@ -184,6 +201,11 @@ export default function App() {
               setBackupApiUrl(url);
               localStorage.setItem('backup_api_url', url);
             }}
+          />
+
+          <ManualTranscriptInput 
+            manualTranscript={manualTranscript}
+            onTranscriptChange={setManualTranscript}
           />
 
           <HistoryList 
@@ -269,9 +291,11 @@ export default function App() {
                       <div className="flex-1">
                         <h4 className="font-bold text-sm mb-1">
                           {data.realTranscriptFetched 
-                            ? data.backupApiUsed 
-                              ? "📡 استخراج موفق زیرنویس از سرور پشتیبان مستقل"
-                              : "✅ داده‌های واقعی ویدیو با موفقیت دریافت شد" 
+                            ? data.manualImportUsed
+                              ? "📥 رونوشت/زیرنویس دستی شما با موفقیت بارگذاری و تحلیل شد"
+                              : data.backupApiUsed 
+                                ? "📡 استخراج موفق زیرنویس از سرور پشتیبان مستقل"
+                                : "✅ داده‌های واقعی ویدیو با موفقیت دریافت شد" 
                             : data.errorOccurred
                               ? "⚠️ خطای سیستمی (پیکربندی کلید یا سهمیه)"
                               : data.transcriptDisabled
@@ -283,6 +307,10 @@ export default function App() {
                         <p className="text-xs leading-relaxed opacity-90 font-medium">
                           {data.authError
                             ? "🚨 کلید API شما به دلیل نشت امنیتی مسدود شده است. گوگل کلیدهایی را که در محیط‌های عمومی دیده شوند باطل می‌کند. لطفاً از منوی Settings یک کلید جدید وارد کنید."
+                            : data.manualImportUsed
+                              ? data.errorOccurred
+                                ? "رونوشت/زیرنویس وارد شده مکتوب شما به دلیل محدودیت یا مسدود بودن کلید پیش‌فرض سیستم، با متدولوژی ارزیابی دقیق واژگان بومی با موفقیت تحلیل گردید."
+                                : "رونوشت/زیرنویس وارد شده به صورت دستی توسط شما به عنوان منبع موثق تحلیل با موفقیت توسط مدل زنده Gemini پردازش گردید."
                             : data.modelError
                               ? "مدل هوش‌مصنوعی در دسترس نیست. این مورد ممکن است به دلیل محدودیت‌های ریجن باشد."
                               : data.backupApiUsed
@@ -313,7 +341,11 @@ export default function App() {
                   <SentimentDistributionChart timeline={data.sentimentTimeline} />
                 )}
                 <AnalysisCards data={data.analysis} />
-                <ExportActions data={data} />
+                <ExportActions 
+                  data={data} 
+                  onOpenPrintView={() => setShowPrintMode(true)} 
+                />
+                <VideoSubtitlesVisualizer transcript={data.transcript} videoDetails={data.videoDetails} />
                 <TranscriptBox transcript={data.transcript} />
               </motion.div>
             )}

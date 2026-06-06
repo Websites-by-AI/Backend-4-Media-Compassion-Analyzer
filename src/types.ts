@@ -40,6 +40,7 @@ export interface AnalyzeResponse {
   isSimulated?: boolean;
   modelError?: boolean;
   backupApiUsed?: boolean;
+  manualImportUsed?: boolean;
   activeExtractionMode?: string;
 }
 

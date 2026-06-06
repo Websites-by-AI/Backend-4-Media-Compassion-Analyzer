@@ -7,3 +7,31 @@
 body {
   @apply bg-slate-50 text-slate-900;
 }
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 12pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Prevent page breaks inside cards for highly polished flow */
+  .break-inside-avoid,
+  .print-card-break-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Force background colors and border styles when printing to PDF */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Clean up headers and footers from browser defaults */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+}
